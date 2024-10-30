@@ -2,6 +2,8 @@
 
 This tool extracts Japanese words from text and prepares them for import into KotobaBot via CSV exports. I personally use it on **[NHK Easy](https://www3.nhk.or.jp/news/easy/)** 
 
+https://k0gasa.github.io/KotobaBot-Deck-Maker/
+
 ## Overview
 
 It takes Japanese text and turns it into a personalized vocabulary list. Paste your Japanese text, and it will:
