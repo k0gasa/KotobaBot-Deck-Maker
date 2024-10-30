@@ -1,6 +1,6 @@
 # KotobaBot Importer
 
-This tool extracts Japanese words from text and prepares them for import into KotobaBot via CSV exports. I personally use it on **[NHK Easy]([https://github.com/takuyaa/tiny-segmenter](https://www3.nhk.or.jp/news/easy/))** 
+This tool extracts Japanese words from text and prepares them for import into KotobaBot via CSV exports. I personally use it on **[NHK Easy]([https://github.com/takuyaa/tiny-segmenter]**(https://www3.nhk.or.jp/news/easy/))** 
 
 ## Overview
 
