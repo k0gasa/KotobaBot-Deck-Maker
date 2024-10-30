@@ -535,7 +535,7 @@ async function fetchWordData(word) {
             const firstResult = data.words[0];
             return {
                 word: firstResult.word,
-                pronunciation: firstResult.furigana || firstResult.reading || '',
+                pronunciation: firstResult.furigana || firstResult.reading || firstResult.word,
                 meaning: firstResult.meaning || '',
                 level: firstResult.level || 'N/A'
             };
