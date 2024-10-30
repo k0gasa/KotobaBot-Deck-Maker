@@ -1,0 +1,685 @@
+<html><head><base href="https://kanjisrs.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanji SRS Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="http://chasen.org/~taku/software/TinySegmenter/tiny_segmenter-0.2.js"></script>
+<style>
+body {
+    user-select: none;
+    caret-color: transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.container {
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    padding: 40px 20px;
+}
+
+.text-input {
+    width: 100%;
+    min-height: 200px;
+    padding: 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    resize: vertical;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
+.text-input::-webkit-scrollbar {
+    width: 8px;
+}
+
+.text-input::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.text-input::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 4px;
+    border: 2px solid #1a1a1a;
+}
+
+.text-input::-webkit-scrollbar-thumb:hover {
+    background-color: #444;
+}
+
+.text-input:focus {
+    border-color: #ad0b72;
+    outline: none;
+}
+
+.analyze-button {
+    max-width: 200px;
+    padding: 15px;
+    font-size: 18px;
+    background-color: #ad0b60;
+    color: #e0e0e0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px auto;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.analyze-button:hover {
+    background-color: #ad0b72;
+    transform: translateY(-2px);
+}
+
+.analyze-button:active {
+    transform: translateY(0);
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 18px;
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #e0e0e0;
+}
+
+.feedback {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 18px;
+    padding: 10px;
+    border-radius: 5px;
+    transition: opacity 0.3s ease-in-out, background-color 0.3s, color 0.3s;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.feedback.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.feedback.correct {
+    background-color: rgba(0, 255, 0, 0.1);
+    color: #4caf50;
+}
+
+.feedback.incorrect {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #f44336;
+}
+
+.menu-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 24px;
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100%;
+    background-color: #1e1e1e;
+    transition: left 0.3s ease-in-out;
+    overflow-y: auto;
+    padding: 20px 15px;
+    box-sizing: border-box;
+    z-index: 1000;
+    scrollbar-width: thin;
+    scrollbar-color: #4a4a4a #1e1e1e;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #4a4a4a;
+    border-radius: 4px;
+    border: 2px solid #1e1e1e;
+}
+
+.sidebar.open {
+    left: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sidebar-close, .sidebar-pin {
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.sidebar-pin {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+.sidebar-pin:hover {
+    background-color: #2a2a2a;
+}
+
+.sidebar-pin.active {
+    background-color: #4caf50;
+}
+
+.kanji-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.kanji-item {
+    background-color: #2a2a2a;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.kanji-item h3 {
+    margin: 0 0 5px 0;
+}
+
+.kanji-item p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.import-export-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.import-export-buttons button,
+.add-kanji-container button,
+.modal-buttons button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #ad0b60;
+    color: #e0e0e0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    flex: 1;
+    margin: 0 5px;
+}
+
+.import-export-buttons button:hover,
+.add-kanji-container button:hover,
+.modal-buttons button:hover {
+    background-color: #ad0b72;
+    transform: translateY(-2px);
+}
+
+.import-export-buttons button:active,
+.add-kanji-container button:active,
+.modal-buttons button:active {
+    transform: translateY(0);
+}
+
+.add-kanji-container {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.add-kanji-container input {
+    flex-grow: 1;
+    width: 70%;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    color: #e0e0e0;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 5px;
+    width: 340px;
+    max-width: 90%;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: #e0e0e0;
+}
+
+.modal-content input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 16px;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #e0e0e0;
+}
+
+#import-data {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 10px;
+    padding: 10px;
+    font-size: 14px;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #e0e0e0;
+    resize: vertical;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+</style>
+</head>
+<body tabindex="-1">
+<button class="menu-button" onclick="toggleSidebar()">☰</button>
+<div class="container">
+    <textarea class="text-input" id="japanese-text" placeholder="Paste Japanese text here..."></textarea>
+    <button class="analyze-button" onclick="analyzeText()">Extract Words</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>Word List</h2>
+        <div>
+            <button class="sidebar-pin" id="sidebar-pin" onclick="togglePin()" title="Pin sidebar">📌</button>
+            <button class="sidebar-close" onclick="closeSidebar()">×</button>
+        </div>
+    </div>
+    <div class="import-export-buttons">
+        <button onclick="exportData()">Export</button>
+        <button onclick="showImportModal()">Import</button>
+    </div>
+    <div class="add-kanji-container">
+        <input type="text" id="new-word" placeholder="Enter new word">
+        <button onclick="addNewWord()">Add</button>
+    </div>
+    <ul class="kanji-list" id="kanji-list"></ul>
+</div>
+
+<div id="import-modal" class="modal">
+    <div class="modal-content">
+        <h2>Import Data</h2>
+        <textarea id="import-data" placeholder="Paste your exported data here" rows="10"></textarea>
+        <div class="modal-buttons">
+            <button onclick="importData()">Import</button>
+            <button onclick="closeImportModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="manual-input-modal" class="modal">
+    <div class="modal-content">
+        <h2>Add Word Manually</h2>
+        <input type="text" id="manual-word" placeholder="Word" required>
+        <input type="text" id="manual-pronunciation" placeholder="Pronunciation (Hiragana)" required>
+        <input type="text" id="manual-meaning" placeholder="Meaning" required>
+        <input type="text" id="manual-level" placeholder="JLPT Level (optional)">
+        <div class="modal-buttons">
+            <button onclick="addWordManually()">Add Word</button>
+            <button onclick="closeManualInputForm()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tiny-segmenter/0.2.0/tiny-segmenter.min.js"></script>
+<script>
+let sidebarPinned = false;
+let kanjiList = [];
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+function hideFeedback() {
+    const feedbackElement = document.getElementById('feedback');
+    feedbackElement.classList.remove('show');
+    feedbackElement.classList.remove('correct');
+    feedbackElement.classList.remove('incorrect');
+}
+
+function getNextKanji() {
+    if (!window.kanjiQueue || window.kanjiQueue.length === 0) {
+        window.kanjiQueue = [...kanjiList];
+        shuffleArray(window.kanjiQueue);
+    }
+
+    let nextKanji = window.kanjiQueue.shift();
+    while (nextKanji.word === currentKanji.word && window.kanjiQueue.length > 0) {
+        window.kanjiQueue.push(nextKanji);
+        nextKanji = window.kanjiQueue.shift();
+    }
+
+    return nextKanji;
+}
+
+async function analyzeText() {
+    const text = document.getElementById('japanese-text').value;
+    
+    const segmenter = new TinySegmenter();
+    
+    const segments = segmenter.segment(text);
+    
+    const filteredSegments = segments.filter(segment => {
+        const particles = ['は', 'の', 'に', 'へ', 'で', 'と', 'が', 'を', 'や', 'な', 'に', 'も'];
+        return segment.length >= 2 && 
+               !particles.includes(segment) &&
+               !/^[\s0-9!?,."'　。、！？」「()（）［］・]+$/.test(segment);
+    });
+    
+    console.log('Segmented words:', filteredSegments);
+    
+    for (const segment of filteredSegments) {
+        try {
+            console.log('Processing word:', segment);
+            const wordData = await fetchWordData(segment);
+            if (wordData) {
+                console.log('Got word data:', wordData);
+                if (!kanjiList.find(item => item.word === wordData.word)) {
+                    kanjiList.push(wordData);
+                    updateKanjiList();
+                }
+            }
+        } catch (error) {
+            console.error('Error processing word:', segment, error);
+        }
+    }
+    
+    document.getElementById('japanese-text').value = '';
+}
+
+function updateKanjiList() {
+    const wordListElement = document.getElementById('kanji-list');
+    wordListElement.innerHTML = '';
+    kanjiList.sort((a, b) => a.word.localeCompare(b.word)).forEach(word => {
+        const li = document.createElement('li');
+        li.className = 'kanji-item';
+        li.innerHTML = `
+            <h3>${word.word}</h3>
+            <p>Pronunciation: ${word.pronunciation}</p>
+            <p>Meaning: ${word.meaning}</p>
+            <p>Level: ${word.level || 'N/A'}</p>
+        `;
+        wordListElement.appendChild(li);
+    });
+}
+
+function speakWord() {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(currentKanji.pronunciation);
+        utterance.lang = 'ja-JP';
+        speechSynthesis.speak(utterance);
+    } else {
+        alert('Sorry, your browser does not support text-to-speech!');
+    }
+}
+
+function updateStats() {
+    const totalWords = kanjiList.length;
+    const uniqueKanji = new Set(kanjiList.flatMap(item => item.word.split('').filter(char => char.match(/[\u4e00-\u9faf]/)))).size;
+    
+    const statsElement = document.getElementById('stats');
+    statsElement.innerHTML = `
+        Words in deck: ${totalWords}<br>
+        Unique kanji: ${uniqueKanji}
+    `;
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('open');
+    if (sidebar.classList.contains('open')) {
+        updateKanjiList();
+    }
+}
+
+function closeSidebar() {
+    if (!sidebarPinned) {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.remove('open');
+    }
+}
+
+function togglePin() {
+    sidebarPinned = !sidebarPinned;
+    const pinButton = document.getElementById('sidebar-pin');
+    pinButton.classList.toggle('active', sidebarPinned);
+    pinButton.textContent = sidebarPinned ? '📌' : '📌';
+}
+
+async function fetchWordData(word) {
+    try {
+        const response = await fetch(`https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(word)}`);
+        if (!response.ok) throw new Error('API request failed');
+        const data = await response.json();
+        console.log('API response:', data);
+        
+        if (data && data.words && data.words.length > 0) {
+            const firstResult = data.words[0];
+            return {
+                word: firstResult.word,
+                pronunciation: firstResult.furigana || firstResult.reading || '',
+                meaning: firstResult.meaning || '',
+                level: firstResult.level || 'N/A'
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching word data:', error, 'for word:', word);
+        return null;
+    }
+}
+
+async function addNewWord() {
+    const newWordInput = document.getElementById('new-word');
+    const word = newWordInput.value.trim();
+    
+    if (word.length === 0) {
+        alert('Please enter a kanji or word.');
+        return;
+    }
+    
+    const existingWord = kanjiList.find(item => item.word === word);
+    if (existingWord) {
+        alert('This word is already in the list.');
+        return;
+    }
+    
+    const wordData = await fetchWordData(word);
+    if (wordData) {
+        kanjiList.push(wordData);
+        newWordInput.value = '';
+        updateKanjiList();
+        updateStats();
+        alert('Word added successfully!');
+    } else {
+        showManualInputForm(word);
+    }
+}
+
+function showManualInputForm(word) {
+    document.getElementById('manual-word').value = word;
+    document.getElementById('manual-input-modal').style.display = 'flex';
+}
+
+function addWordManually() {
+    const word = document.getElementById('manual-word').value.trim();
+    const pronunciation = document.getElementById('manual-pronunciation').value.trim();
+    const meaning = document.getElementById('manual-meaning').value.trim();
+    const level = document.getElementById('manual-level').value.trim();
+
+    if (word && pronunciation && meaning) {
+        kanjiList.push({
+            word: word,
+            pronunciation: pronunciation,
+            meaning: meaning,
+            level: level || 'N/A'
+        });
+        updateKanjiList();
+        updateStats();
+        closeManualInputForm();
+        alert('Word added successfully!');
+    } else {
+        alert('Please fill in all required fields.');
+    }
+}
+
+function closeManualInputForm() {
+    document.getElementById('manual-input-modal').style.display = 'none';
+    document.getElementById('manual-word').value = '';
+    document.getElementById('manual-pronunciation').value = '';
+    document.getElementById('manual-meaning').value = '';
+    document.getElementById('manual-level').value = '';
+}
+
+function exportData() {
+    let csvContent = "\uFEFF";
+    
+    csvContent += "Question,Answers,Comment,Instructions,Render as\n";
+    
+    kanjiList.forEach(word => {
+        const row = [
+            escapeCsvField(word.word),
+            escapeCsvField(word.pronunciation),
+            escapeCsvField(word.meaning),
+            "Type the reading!",
+            "Image"
+        ].join(',');
+        
+        csvContent += row + "\n";
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'vocabulary.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function escapeCsvField(field) {
+    if (field === null || field === undefined) {
+        return '""';
+    }
+    field = field.toString();
+    if (field.includes('"') || field.includes(',') || field.includes('\n')) {
+        return '"' + field.replace(/"/g, '""') + '"';
+    }
+    return field;
+}
+
+function showImportModal() {
+    document.getElementById('import-modal').style.display = 'flex';
+}
+
+function closeImportModal() {
+    document.getElementById('import-modal').style.display = 'none';
+    document.getElementById('import-data').value = '';
+}
+
+function importData() {
+    const importedData = document.getElementById('import-data').value;
+    try {
+        const data = JSON.parse(importedData);
+        kanjiList = data.kanjiList || [];
+        
+        updateKanjiList();
+        updateStats();
+        closeImportModal();
+        alert('Data imported successfully!');
+    } catch (error) {
+        alert('Error importing data. Please check the format and try again.');
+    }
+}
+
+updateKanjiList();
+
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuButton = document.querySelector('.menu-button');
+    if (!sidebar.contains(event.target) && !menuButton.contains(event.target) && !sidebarPinned) {
+        closeSidebar();
+    }
+});
+</script>
+</body></html>
